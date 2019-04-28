@@ -1,16 +1,31 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+# Shinydashboard application for exploring the 2-18 OPD data set.
 
+# load the libraries
 library(shiny)
 library(shinydashboard)
 library(tidyverse)
+library(lubridate)
+library(treemap)
 
+#load the data
+OP_raw <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
+
+# Demographic tab data
+
+Num_of_appointments <- nrow(OP_2018)
+Num_of_individuals_seen <- n_distinct(OP_2018$NHI)
+Mean_no_appoints <- round(nrow(OP_2018) / n_distinct(OP_2018$NHI), digits = 1)
+Gender_spread <- fct_count(OP_2018$Gender, sort = TRUE)
+No_clinics <- OP_2018 %>% 
+    group_by(NHI, Clinical_line) %>% 
+    summarise(Number = n())
+No_clinics <- No_clinics %>% 
+    group_by(NHI) %>% 
+    summarise(Number = n())
+Mean_no_clinics_attended <- round(mean(No_clinics$Number), digits = 1)
+Median_no_clinics_attended <- median(No_clinics$Number)
+
+# shinydashboard proper
 my_header <- dashboardHeader(
     title = "Outpatients explorer"
 )
@@ -22,6 +37,10 @@ my_sidebar <- dashboardSidebar(
             tabName = "demo"
             ),
         menuItem(
+            "Ethnicity",
+            tabName = "ethnic"
+        ),
+        menuItem(
             "By locality",
             tabName = "by_locality"
         ),
@@ -31,13 +50,56 @@ my_sidebar <- dashboardSidebar(
         ),
         menuItem(
             "Data",
-            tabName = "Data"
+            tabName = "data"
         )
         
     )
 )
 
-my_body <- dashboardBody()
+my_body <- dashboardBody(
+    tabItem(tabName = "demo",
+            fluidRow(
+                valueBox(
+                    value = Num_of_individuals_seen,
+                    subtitle = "Total number of patients seen",
+                    color = "green"
+                ),
+                valueBox(
+                    value = Num_of_appointments,
+                    subtitle = "Total number of appointments",
+                    color = "green"
+                ),
+                valueBox(
+                    value = Mean_no_appoints,
+                    subtitle = "Mean number of appointments / patient",
+                    color = "green"
+                )
+            ),
+            fluidRow(
+                plotOutput("num_clinics")
+            ),
+            fluidRow(
+                valueBox(
+                    value = Mean_no_clinics_attended,
+                    subtitle = "Average number of clinics attended by each patient",
+                    color = "green"
+                ),
+                valueBox(
+                    value = max(No_clinics$Number),
+                    subtitle = "Max number of different clinics attended by a single patient",
+                    color = "green"
+                )
+            )
+    ),
+    tabItem(tabName = "ethnic",
+            fluidRow(
+                title = "Ethnicity distribution with age",
+                plotOutput("ethic_spread")
+            )),
+    tabItem(tabName = "by_locality"),
+    tabItem(tabName = "by_clinic"),
+    tabItem(tabName = "data")
+)
 
 
 # Define UI for application that draws a histogram
@@ -51,13 +113,23 @@ ui <- dashboardPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
+    output$num_clinics <- renderPlot({
+        ggplot(Mean_no_clinics, aes(x = Number)) +
+            geom_histogram(binwidth = 1) +
+            labs(title = "Number of different types of clinics attended by each patient", subtitle = "Range 1-12 different clinics per patient", x = "Number of different clinics attended per patient", y = "Number of individuals") +
+            scale_x_continuous(breaks = seq(1,10,2)) +
+            coord_cartesian(xlim = c(0,10)) +
+            theme_light()
+    })
+    
+    output$ethnic_spread <- renderPlot({
+        ggplot(OP_2018, aes(x = Age, fill = Ethnicity_2)) +
+            geom_histogram(binwidth = 5, position = "fill") +
+            labs(title = "Relative proportion of ethnicities within each age band",
+                 x = "Age bands",
+                 y = "Proportion of each age band") +
+            guides(fill = guide_legend(title = "Ethnicity")) +
+            theme_light()
     })
 }
 
