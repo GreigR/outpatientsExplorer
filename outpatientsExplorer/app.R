@@ -8,28 +8,44 @@
 #
 
 library(shiny)
+library(shinydashboard)
+library(tidyverse)
+
+my_header <- dashboardHeader(
+    title = "Outpatients explorer"
+)
+
+my_sidebar <- dashboardSidebar(
+    sidebarMenu(
+        menuItem(
+            "Demographics",
+            tabName = "demo"
+            ),
+        menuItem(
+            "By locality",
+            tabName = "by_locality"
+        ),
+        menuItem(
+            "By clinic",
+            tabName = "by_clinic"
+        ),
+        menuItem(
+            "Data",
+            tabName = "Data"
+        )
+        
+    )
+)
+
+my_body <- dashboardBody()
+
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
-    )
+ui <- dashboardPage(
+    skin = "green",
+    header <- my_header,
+    sidebar <- my_sidebar,
+    body <- my_body
 )
 
 # Define server logic required to draw a histogram
