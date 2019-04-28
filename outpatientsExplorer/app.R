@@ -31,13 +31,13 @@ my_header <- dashboardHeader(
 )
 
 my_sidebar <- dashboardSidebar(
-    sidebarMenu(
+    sidebarMenu(id = "menu_Select",
         menuItem(
             "Demographics",
             tabName = "demo"
             ),
         menuItem(
-            "Ethnicity",
+            "Ethnicity & age",
             tabName = "ethnic"
         ),
         menuItem(
@@ -52,54 +52,62 @@ my_sidebar <- dashboardSidebar(
             "Data",
             tabName = "data"
         )
-        
     )
 )
 
 my_body <- dashboardBody(
-    tabItem(tabName = "demo",
-            fluidRow(
-                valueBox(
-                    value = Num_of_individuals_seen,
-                    subtitle = "Total number of patients seen",
-                    color = "green"
+    tabItems(
+        tabItem(tabName = "demo",
+                fluidRow(
+                    valueBox(
+                        value = Num_of_individuals_seen,
+                        subtitle = "Total number of patients seen",
+                        color = "green"
+                    ),
+                    valueBox(
+                        value = Num_of_appointments,
+                        subtitle = "Total number of appointments",
+                        color = "green"
+                    ),
+                    valueBox(
+                        value = Mean_no_appoints,
+                        subtitle = "Mean number of appointments / patient",
+                        color = "green"
+                    )
                 ),
-                valueBox(
-                    value = Num_of_appointments,
-                    subtitle = "Total number of appointments",
-                    color = "green"
+                fluidRow(
+                    plotOutput("num_clinics")
                 ),
-                valueBox(
-                    value = Mean_no_appoints,
-                    subtitle = "Mean number of appointments / patient",
-                    color = "green"
+                fluidRow(
+                    valueBox(
+                        value = Mean_no_clinics_attended,
+                        subtitle = "Average number of clinics attended by each patient",
+                        color = "green"
+                    ),
+                    valueBox(
+                        value = max(No_clinics$Number),
+                        subtitle = "Max number of different clinics attended by a single patient",
+                        color = "green"
+                    )
                 )
-            ),
-            fluidRow(
-                plotOutput("num_clinics")
-            ),
-            fluidRow(
-                valueBox(
-                    value = Mean_no_clinics_attended,
-                    subtitle = "Average number of clinics attended by each patient",
-                    color = "green"
+        ),
+        tabItem(tabName = "ethnic",
+                fluidRow(
+                    h2("Ethnicity & age")
                 ),
-                valueBox(
-                    value = max(No_clinics$Number),
-                    subtitle = "Max number of different clinics attended by a single patient",
-                    color = "green"
-                )
-            )
-    ),
-    tabItem(tabName = "ethnic",
-            fluidRow(
-                title = "Ethnicity distribution with age",
-                plotOutput("ethic_spread")
-            )),
-    tabItem(tabName = "by_locality"),
-    tabItem(tabName = "by_clinic"),
-    tabItem(tabName = "data")
-)
+                fluidRow(
+                    plotOutput("age")
+                ),
+                fluidRow(
+                    plotOutput("ethnic_spread")
+                )),
+        tabItem(tabName = "by_locality",
+                fluidRow(
+                    h2("by Locality placehoder")
+                    )),
+        tabItem(tabName = "by_clinic"),
+        tabItem(tabName = "data")
+    ))
 
 
 # Define UI for application that draws a histogram
@@ -119,6 +127,13 @@ server <- function(input, output) {
             labs(title = "Number of different types of clinics attended by each patient", subtitle = "Range 1-12 different clinics per patient", x = "Number of different clinics attended per patient", y = "Number of individuals") +
             scale_x_continuous(breaks = seq(1,10,2)) +
             coord_cartesian(xlim = c(0,10)) +
+            theme_light()
+    })
+    
+    output$age <- renderPlot({
+        ggplot(OP_2018, aes(x = Age)) +
+            geom_histogram(binwidth = 5, fill = "red") +
+            labs(title = "Age distribution") +
             theme_light()
     })
     
