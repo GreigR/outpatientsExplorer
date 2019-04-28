@@ -27,7 +27,8 @@ Median_no_clinics_attended <- median(No_clinics$Number)
 
 # shinydashboard proper
 my_header <- dashboardHeader(
-    title = "Outpatients explorer"
+    title = "Outpatients explorer (2018)",
+    titleWidth = 300
 )
 
 my_sidebar <- dashboardSidebar(
@@ -76,7 +77,9 @@ my_body <- dashboardBody(
                     )
                 ),
                 fluidRow(
-                    plotOutput("num_clinics")
+                        box(
+                            width = 12,
+                            column(12, align = "center",plotOutput("num_clinics"), align = "right"))
                 ),
                 fluidRow(
                     valueBox(
