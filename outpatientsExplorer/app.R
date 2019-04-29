@@ -5,10 +5,11 @@ library(shiny)
 library(shinydashboard)
 library(tidyverse)
 library(lubridate)
+library(DT)
 library(treemap)
 
 #load the data
-OP_raw <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
+OP_2018 <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
 
 # Demographic tab data
 
@@ -105,9 +106,27 @@ my_body <- dashboardBody(
                     plotOutput("ethnic_spread")
                 )),
         tabItem(tabName = "by_locality",
-                fluidRow(
-                    h2("by Locality placehoder")
-                    )),
+                fluidPage(
+                    sidebarLayout(
+                        sidebarPanel(
+                            selectInput(
+                                inputId = "locality",
+                                label = "Locality",
+                                choices = c("Horowhenua District", "Kapiti Coast Distric","Manawatu District","Palmerston North Cit", "Tararua District"),
+                                multiple = FALSE,
+                                selected = "Horowhenua District"
+                            ),
+                            checkboxInput(
+                                inputId = "locality_data_display",
+                                label = "Show data",
+                                value = FALSE
+                            )
+                        ),
+                        mainPanel(
+                            plotOutput("locality_tree")
+                    )
+                ))
+    ),
         tabItem(tabName = "by_clinic"),
         tabItem(tabName = "data")
     ))
@@ -125,7 +144,7 @@ ui <- dashboardPage(
 server <- function(input, output) {
 
     output$num_clinics <- renderPlot({
-        ggplot(Mean_no_clinics, aes(x = Number)) +
+        ggplot(No_clinics, aes(x = Number)) +
             geom_histogram(binwidth = 1) +
             labs(title = "Number of different types of clinics attended by each patient", subtitle = "Range 1-12 different clinics per patient", x = "Number of different clinics attended per patient", y = "Number of individuals") +
             scale_x_continuous(breaks = seq(1,10,2)) +
@@ -149,6 +168,17 @@ server <- function(input, output) {
             guides(fill = guide_legend(title = "Ethnicity")) +
             theme_light()
     })
+    
+    output$locality_tree <- renderPlot({
+        tree_map_data = OP_2018 %>% 
+            filter(Locality == input$locality) %>% 
+            group_by(Funding_type) %>% 
+            summarise(Count = n()) %>%
+            arrange(Count)
+        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "Outpatient clinic by locality")
+    })
+    
+    
 }
 
 # Run the application 
