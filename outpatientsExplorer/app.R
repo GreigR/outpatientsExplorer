@@ -65,17 +65,17 @@ my_body <- dashboardBody(
                 fluidRow(
                     valueBox(
                         value = Num_of_individuals_seen,
-                        subtitle = "Total number of patients seen",
+                        subtitle = "patients seen",
                         color = "green"
                     ),
                     valueBox(
                         value = Num_of_appointments,
-                        subtitle = "Total number of appointments",
+                        subtitle = "appointments provided",
                         color = "green"
                     ),
                     valueBox(
                         value = Mean_no_appoints,
-                        subtitle = "Mean number of appointments / patient",
+                        subtitle = "Is the mean number of appointments / patient",
                         color = "green"
                     )
                 ),
@@ -87,12 +87,12 @@ my_body <- dashboardBody(
                 fluidRow(
                     valueBox(
                         value = Mean_no_clinics_attended,
-                        subtitle = "Average number of clinics attended by each patient",
+                        subtitle = "is the average number of clinics attended by each patient",
                         color = "green"
                     ),
                     valueBox(
                         value = max(No_clinics$Number),
-                        subtitle = "Max number of different clinics attended by a single patient",
+                        subtitle = "Was the maximum number of different clinics attended by a single patient",
                         color = "green"
                     )
                 )
@@ -150,7 +150,9 @@ server <- function(input, output) {
     output$num_clinics <- renderPlot({
         ggplot(No_clinics, aes(x = Number)) +
             geom_histogram(binwidth = 1) +
-            labs(title = "Number of different types of clinics attended by each patient", subtitle = "Range 1-12 different clinics per patient", x = "Number of different clinics attended per patient", y = "Number of individuals") +
+            labs(title = "How many different clinics did each patient attend?", 
+                 subtitle = "Answer: it ranged from 1 to 12 different clinics per patient", 
+                 x = "Number of different clinics attended per patient", y = "Number of individuals") +
             scale_x_continuous(breaks = seq(1,10,2)) +
             coord_cartesian(xlim = c(0,10)) +
             theme_light()
@@ -159,14 +161,14 @@ server <- function(input, output) {
     output$age <- renderPlot({
         ggplot(OP_2018, aes(x = Age)) +
             geom_histogram(binwidth = 5, fill = "red") +
-            labs(title = "Age distribution") +
+            labs(title = "What was the distribution of ages?") +
             theme_light()
     })
     
     output$ethnic_spread <- renderPlot({
         ggplot(OP_2018, aes(x = Age, fill = Ethnicity_2)) +
             geom_histogram(binwidth = 5, position = "fill") +
-            labs(title = "Are ethnicities equally distributed across all age bands?",
+            labs(title = "Are ethnicities equally distributed equally across all age bands?",
                  x = "Age bands",
                  y = "Proportion of each age band") +
             guides(fill = guide_legend(title = "Ethnicity")) +
@@ -181,7 +183,7 @@ server <- function(input, output) {
             group_by(Funding_type) %>% 
             summarise(Count = n()) %>%
             arrange(Count)
-        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "Does utilization change with locality")
+        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is the most common appointment type for a locality?")
     })
     
     
