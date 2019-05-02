@@ -120,12 +120,12 @@ my_body <- dashboardBody(
                             ),
                             checkboxInput(inputId = "show_data_local",
                                           label = "Show data table",
-                                          value = TRUE)
+                                          value = FALSE)
                         ),
                         mainPanel(
                             plotOutput("locality_tree"),
-                            conditionalPanel("input.show_data_local == true", h2("Data table")),
-                            DT::dataTableOutput("tbl")
+                            h2("Data table"),
+                            conditionalPanel("input.show_data_local == true", DT::dataTableOutput("tbl"))
                         )
                              
                         ))),
@@ -164,7 +164,7 @@ server <- function(input, output) {
     output$ethnic_spread <- renderPlot({
         ggplot(OP_2018, aes(x = Age, fill = Ethnicity_2)) +
             geom_histogram(binwidth = 5, position = "fill") +
-            labs(title = "Relative proportion of ethnicities within each age band",
+            labs(title = "Are ethnicities equally distributed across all age bands?",
                  x = "Age bands",
                  y = "Proportion of each age band") +
             guides(fill = guide_legend(title = "Ethnicity")) +
@@ -190,14 +190,13 @@ server <- function(input, output) {
             arrange(desc(Count))
         })
     
-    # output$tbl <- DT::renderDataTable(
-    #     if(input$show_data_local){
+    # output$tbl <- renderTable(if(input$show_data_local){
     #     OP_2018 %>%
     #         filter(Locality == input$locality) %>%
     #         group_by(Funding_type) %>%
     #         summarise(Count = n()) %>%
-    #         arrange(desc(Count))}
-    # )
+    #         arrange(desc(Count))
+    # })
 }
 
 # Run the application 
