@@ -124,13 +124,15 @@ my_body <- dashboardBody(
                         ),
                         mainPanel(
                             plotOutput("locality_tree"),
-                            h2("Data table"),
-                            conditionalPanel("input.show_data_local == true", DT::dataTableOutput("tbl"))
+                            #h2("Data table"),
+                            conditionalPanel("input.show_data_local == true", h2("Data table")),
+                            DT::dataTableOutput("tbl")
                         )
                              
                         ))),
         tabItem(tabName = "by_clinic"),
         tabItem(tabName = "data")
+                
     ))
 
 
@@ -179,24 +181,21 @@ server <- function(input, output) {
             group_by(Funding_type) %>% 
             summarise(Count = n()) %>%
             arrange(Count)
-        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "Outpatient clinic by locality")
+        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "Does utilization change with locality")
     })
     
-    output$tbl <-  DT::renderDataTable({
-        OP_2018 %>%
+    
+    output$tbl <-  DT::renderDataTable(
+        if(input$show_data_local){
+       tree_data <-  OP_2018 %>%
             filter(Locality == input$locality) %>%
             group_by(Funding_type) %>%
             summarise(Count = n()) %>%
             arrange(desc(Count))
+       DT::datatable(tree_data,
+                     options = list(pageLength = 5),
+                     rownames = FALSE)
         })
-    
-    # output$tbl <- renderTable(if(input$show_data_local){
-    #     OP_2018 %>%
-    #         filter(Locality == input$locality) %>%
-    #         group_by(Funding_type) %>%
-    #         summarise(Count = n()) %>%
-    #         arrange(desc(Count))
-    # })
 }
 
 # Run the application 
