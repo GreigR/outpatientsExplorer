@@ -26,6 +26,8 @@ No_clinics <- No_clinics %>%
 Mean_no_clinics_attended <- round(mean(No_clinics$Number), digits = 1)
 Median_no_clinics_attended <- median(No_clinics$Number)
 
+Locality_levels <- levels(OP_2018$Locality)
+
 # shinydashboard proper
 my_header <- dashboardHeader(
     title = "Outpatients explorer (2018)",
@@ -116,17 +118,17 @@ my_body <- dashboardBody(
                                 multiple = FALSE,
                                 selected = "Horowhenua District"
                             ),
-                            checkboxInput(
-                                inputId = "locality_data_display",
-                                label = "Show data",
-                                value = FALSE
-                            )
+                            checkboxInput(inputId = "show_data_local",
+                                          label = "Show data table",
+                                          value = TRUE)
                         ),
                         mainPanel(
-                            plotOutput("locality_tree")
-                    )
-                ))
-    ),
+                            plotOutput("locality_tree"),
+                            conditionalPanel("input.show_data_local == true", h2("Data table")),
+                            DT::dataTableOutput("tbl")
+                        )
+                             
+                        ))),
         tabItem(tabName = "by_clinic"),
         tabItem(tabName = "data")
     ))
@@ -169,6 +171,8 @@ server <- function(input, output) {
             theme_light()
     })
     
+   
+    
     output$locality_tree <- renderPlot({
         tree_map_data = OP_2018 %>% 
             filter(Locality == input$locality) %>% 
@@ -178,7 +182,22 @@ server <- function(input, output) {
         treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "Outpatient clinic by locality")
     })
     
+    output$tbl <-  DT::renderDataTable({
+        OP_2018 %>%
+            filter(Locality == input$locality) %>%
+            group_by(Funding_type) %>%
+            summarise(Count = n()) %>%
+            arrange(desc(Count))
+        })
     
+    # output$tbl <- DT::renderDataTable(
+    #     if(input$show_data_local){
+    #     OP_2018 %>%
+    #         filter(Locality == input$locality) %>%
+    #         group_by(Funding_type) %>%
+    #         summarise(Count = n()) %>%
+    #         arrange(desc(Count))}
+    # )
 }
 
 # Run the application 
