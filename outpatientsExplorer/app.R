@@ -128,17 +128,19 @@ my_body <- dashboardBody(
                 fluidPage(
                     sidebarLayout(
                         sidebarPanel(
+                            wellPanel(
                             selectInput(
                                 inputId = "locality",
                                 label = "Locality",
                                 choices = levels(factor(OP_2018$Locality)),
                                 multiple = FALSE,
                                 selected = "Horowhenua District"
-                            ),
+                            )),
+                            wellPanel(
                             checkboxInput(inputId = "show_data_local",
                                           label = "Show data table",
                                           value = FALSE)
-                        ),
+                        )),
                         mainPanel(
                             plotOutput("locality_tree"),
                             #h2("Data table"),
@@ -151,17 +153,19 @@ my_body <- dashboardBody(
                 fluidPage(
                     sidebarLayout(
                         sidebarPanel(
+                            wellPanel(
                             selectInput(
                                 inputId = "clinic",
                                 label = "Clinic",
                                 choices = levels(factor(OP_2018$Clinical_line)),
                                 multiple = FALSE,
                                 selected = "Urology"
-                            ),
+                            )),
+                            wellPanel(
                             checkboxInput(inputId = "show_data_clinic",
                                           label = "Show data table",
                                           value = FALSE)
-                        ),
+                        )),
                         mainPanel(
                             plotOutput("clinic_tree"),
                             #h2("Data table"),
