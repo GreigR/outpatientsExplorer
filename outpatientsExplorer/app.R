@@ -7,6 +7,7 @@ library(tidyverse)
 library(lubridate)
 library(DT)
 library(treemap)
+library(qcc)
 
 #load the data
 OP_2018 <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
@@ -26,8 +27,19 @@ No_clinics <- No_clinics %>%
 Mean_no_clinics_attended <- round(mean(No_clinics$Number), digits = 1)
 Median_no_clinics_attended <- median(No_clinics$Number)
 
-Locality_levels <- levels(OP_2018$Locality)
+plot_age <- ggplot(OP_2018, aes(x = Age)) +
+    geom_histogram(binwidth = 5, fill = "red") +
+    labs(title = "What was the distribution of ages?") +
+    theme_light()
 
+plot_ethnic <- ggplot(OP_2018, aes(x = Age, fill = Ethnicity_2)) +
+    geom_histogram(binwidth = 5, position = "fill") +
+    labs(title = "Are ethnicities equally distributed equally across all age bands?",
+         x = "Age bands",
+         y = "Proportion of each age band") +
+    guides(fill = guide_legend(title = "Ethnicity")) +
+    theme_light()
+    
 # shinydashboard proper
 my_header <- dashboardHeader(
     title = "Outpatients explorer (2018)",
@@ -41,7 +53,11 @@ my_sidebar <- dashboardSidebar(
             tabName = "demo"
             ),
         menuItem(
-            "Ethnicity & age",
+            "Age",
+            tabName = "age"
+        ),
+        menuItem(
+            "Ethnicity",
             tabName = "ethnic"
         ),
         menuItem(
@@ -51,10 +67,6 @@ my_sidebar <- dashboardSidebar(
         menuItem(
             "By clinic",
             tabName = "by_clinic"
-        ),
-        menuItem(
-            "Data",
-            tabName = "data"
         )
     )
 )
@@ -97,12 +109,17 @@ my_body <- dashboardBody(
                     )
                 )
         ),
-        tabItem(tabName = "ethnic",
+        tabItem(tabName = "age",
                 fluidRow(
-                    h2("Ethnicity & age")
+                    h2("Age")
                 ),
                 fluidRow(
                     plotOutput("age")
+                )
+                ),
+        tabItem(tabName = "ethnic",
+                fluidRow(
+                    h2("Ethnicity")
                 ),
                 fluidRow(
                     plotOutput("ethnic_spread")
@@ -114,7 +131,6 @@ my_body <- dashboardBody(
                             selectInput(
                                 inputId = "locality",
                                 label = "Locality",
-                                # choices = c("Horowhenua District", "Kapiti Coast Distric","Manawatu District","Palmerston North Cit", "Tararua District"),
                                 choices = levels(factor(OP_2018$Locality)),
                                 multiple = FALSE,
                                 selected = "Horowhenua District"
@@ -131,9 +147,29 @@ my_body <- dashboardBody(
                         )
                              
                         ))),
-        tabItem(tabName = "by_clinic"),
-        tabItem(tabName = "data")
-                
+        tabItem(tabName = "by_clinic",
+                fluidPage(
+                    sidebarLayout(
+                        sidebarPanel(
+                            selectInput(
+                                inputId = "clinic",
+                                label = "Clinic",
+                                choices = levels(factor(OP_2018$Clinical_line)),
+                                multiple = FALSE,
+                                selected = "Urology"
+                            ),
+                            checkboxInput(inputId = "show_data_clinic",
+                                          label = "Show data table",
+                                          value = FALSE)
+                        ),
+                        mainPanel(
+                            plotOutput("clinic_tree"),
+                            #h2("Data table"),
+                            conditionalPanel("input.show_data_clinic == true", h2("Data table")),
+                            DT::dataTableOutput("clinic_tbl")
+                        )
+                        
+                    )))
     ))
 
 
@@ -160,20 +196,11 @@ server <- function(input, output) {
     })
     
     output$age <- renderPlot({
-        ggplot(OP_2018, aes(x = Age)) +
-            geom_histogram(binwidth = 5, fill = "red") +
-            labs(title = "What was the distribution of ages?") +
-            theme_light()
+        plot_age
     })
     
     output$ethnic_spread <- renderPlot({
-        ggplot(OP_2018, aes(x = Age, fill = Ethnicity_2)) +
-            geom_histogram(binwidth = 5, position = "fill") +
-            labs(title = "Are ethnicities equally distributed equally across all age bands?",
-                 x = "Age bands",
-                 y = "Proportion of each age band") +
-            guides(fill = guide_legend(title = "Ethnicity")) +
-            theme_light()
+        plot_ethnic
     })
     
    
@@ -198,6 +225,37 @@ server <- function(input, output) {
        DT::datatable(tree_data,
                      options = list(pageLength = 5),
                      rownames = FALSE)
+        })
+    
+    # output$clinic_tree <- renderPlot({
+    #     tree_map_data = OP_2018 %>% 
+    #         filter(Clinical_line == input$clinic) %>% 
+    #         group_by(Funding_type) %>% 
+    #         summarise(Count = n()) %>%
+    #         arrange(Count)
+    #     treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is the most common appointment type for this clinic?")
+    # })
+    
+    output$clinic_tree <- renderPlot({
+        Pareto_raw <-  OP_2018 %>% 
+            filter(Clinical_line == input$clinic) %>%
+            group_by(Funding_type) %>%
+            summarise(Count = n())
+        Pareto_data <- Pareto_raw$Count
+        names(Pareto_data) <- Pareto_raw$Funding_type
+        pareto.chart(Pareto_data, main = "What is 75% of current clinic workload", ylab = "Number per year", cumperc = seq(0,100, by = 20))
+    })
+    
+    output$clinic_tbl <-  DT::renderDataTable(
+        if(input$show_data_clinic){
+            tree_data <-  OP_2018 %>%
+                filter(Clinical_line == input$clinic) %>%
+                group_by(Funding_type) %>%
+                summarise(Count = n()) %>%
+                arrange(desc(Count))
+            DT::datatable(tree_data,
+                          options = list(pageLength = 5),
+                          rownames = FALSE)
         })
 }
 
