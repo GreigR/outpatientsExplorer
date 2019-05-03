@@ -65,17 +65,17 @@ my_body <- dashboardBody(
                 fluidRow(
                     valueBox(
                         value = Num_of_individuals_seen,
-                        subtitle = "patients seen",
+                        subtitle = "was the total number of patients seen",
                         color = "green"
                     ),
                     valueBox(
                         value = Num_of_appointments,
-                        subtitle = "appointments provided",
+                        subtitle = "appointments were provided",
                         color = "green"
                     ),
                     valueBox(
                         value = Mean_no_appoints,
-                        subtitle = "Is the mean number of appointments / patient",
+                        subtitle = "is the mean number of appointments / patient",
                         color = "green"
                     )
                 ),
@@ -92,7 +92,7 @@ my_body <- dashboardBody(
                     ),
                     valueBox(
                         value = max(No_clinics$Number),
-                        subtitle = "Was the maximum number of different clinics attended by a single patient",
+                        subtitle = "was the maximum number of different clinics attended by a single patient",
                         color = "green"
                     )
                 )
@@ -114,7 +114,8 @@ my_body <- dashboardBody(
                             selectInput(
                                 inputId = "locality",
                                 label = "Locality",
-                                choices = c("Horowhenua District", "Kapiti Coast Distric","Manawatu District","Palmerston North Cit", "Tararua District"),
+                                # choices = c("Horowhenua District", "Kapiti Coast Distric","Manawatu District","Palmerston North Cit", "Tararua District"),
+                                choices = levels(factor(OP_2018$Locality)),
                                 multiple = FALSE,
                                 selected = "Horowhenua District"
                             ),
