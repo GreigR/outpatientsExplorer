@@ -11,9 +11,10 @@ library(treemap)
 library(qcc)
 
 #load the data
-OP_2018 <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
 # OP_2018 <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
-OP_Referral <- read_csv("/home/greig/R-projects/OutPatients/OP_2018_Referrals.csv")
+OP_2018 <- read_csv("OP_2018.csv")
+# OP_Referral <- read_csv("/home/greig/R-projects/OutPatients/OP_2018_Referrals.csv")
+OP_Referral <- read_csv("OP_2018_Referrals.csv")
 
 # Demographic tab data
 
