@@ -1,5 +1,6 @@
 # Shinydashboard application for exploring the 2-18 OPD data set.
 
+
 # load the libraries
 library(shiny)
 library(shinydashboard)
@@ -11,6 +12,8 @@ library(qcc)
 
 #load the data
 OP_2018 <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
+# OP_2018 <- read_csv("/home/greig/R-projects/OutPatients/OP_2018.csv")
+OP_Referral <- read_csv("/home/greig/R-projects/OutPatients/OP_2018_Referrals.csv")
 
 # Demographic tab data
 
@@ -39,6 +42,15 @@ plot_ethnic <- ggplot(OP_2018, aes(x = Age, fill = Ethnicity_2)) +
          y = "Proportion of each age band") +
     guides(fill = guide_legend(title = "Ethnicity")) +
     theme_light()
+
+Referral_source <- as.factor(OP_Referral$Referral_source)
+Referral_source <- fct_count(Referral_source, sort = TRUE)
+
+Source_data <- Referral_source$n
+names(Source_data) <- Referral_source$f
+# pareto.chart(Source_data, main = "Pareto chart of the sources the referrals to Outpatients (2018)", ylab = "Count", cumperc = seq(0,100, by = 20))
+
+
     
 # shinydashboard proper
 my_header <- dashboardHeader(
@@ -65,8 +77,16 @@ my_sidebar <- dashboardSidebar(
             tabName = "by_locality"
         ),
         menuItem(
-            "By clinic",
+            "By referral source",
+            tabName = "referral_source"
+        ),
+        menuItem(
+            "Supply by clinic",
             tabName = "by_clinic"
+        ),
+        menuItem(
+            "Demand by clinic",
+            tabName = "by_referral"
         )
     )
 )
@@ -149,6 +169,13 @@ my_body <- dashboardBody(
                         )
                              
                         ))),
+        tabItem(tabName = "referral_source",
+                fluidRow(
+                    h2("Source of referrals to Outpatients")
+                ),
+                fluidRow(
+                    plotOutput("referral_spread")
+                )),
         tabItem(tabName = "by_clinic",
                 fluidPage(
                     sidebarLayout(
@@ -167,10 +194,36 @@ my_body <- dashboardBody(
                                           value = FALSE)
                         )),
                         mainPanel(
-                            plotOutput("clinic_tree"),
+                            plotOutput("clinic_tree_2"),
                             #h2("Data table"),
                             conditionalPanel("input.show_data_clinic == true", h2("Data table")),
-                            DT::dataTableOutput("clinic_tbl")
+                            DT::dataTableOutput("clinic_tbl"),
+                            plotOutput("clinic_tree")
+                        )
+                        
+                    ))),
+        tabItem(tabName = "by_referral",
+                fluidPage(
+                    sidebarLayout(
+                        sidebarPanel(
+                            wellPanel(
+                                selectInput(
+                                    inputId = "referral",
+                                    label = "Referral",
+                                    choices = levels(factor(OP_Referral$Department_description)),
+                                    multiple = FALSE,
+                                    selected = "Urology"
+                                )),
+                            wellPanel(
+                                checkboxInput(inputId = "show_data_local_2",
+                                              label = "Show data table",
+                                              value = FALSE)
+                            )),
+                        mainPanel(
+                            plotOutput("referral_tree"),
+                            #h2("Data table"),
+                            conditionalPanel("input.show_data_local_2 == true", h2("Data table")),
+                            DT::dataTableOutput("tbl_2")
                         )
                         
                     )))
@@ -207,7 +260,9 @@ server <- function(input, output) {
         plot_ethnic
     })
     
-   
+   output$referral_spread <- renderPlot({
+       pareto.chart(Source_data, main = "Pareto chart of the sources the referrals to Outpatients (2018)", ylab = "Count", cumperc = seq(0,100, by = 20))
+   })
     
     output$locality_tree <- renderPlot({
         tree_map_data = OP_2018 %>% 
@@ -240,6 +295,29 @@ server <- function(input, output) {
     #     treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is the most common appointment type for this clinic?")
     # })
     
+    output$referral_tree <- renderPlot({
+        tree_map_data = OP_Referral %>% 
+            filter(Department_description == input$referral) %>% 
+            group_by(Referral_type) %>% 
+            summarise(Count = n()) %>%
+            arrange(Count)
+        treemap(tree_map_data, index = "Referral_type", vSize = "Count", title = "What appointment type is most commonly request?")
+    })
+    
+    
+    output$tbl_2 <-  DT::renderDataTable(
+        if(input$show_data_local_2){
+            tree_data <-  OP_Referral %>%
+                filter(Department_description == input$referral) %>%
+                group_by(Referral_type) %>%
+                summarise(Count = n()) %>%
+                arrange(desc(Count))
+            DT::datatable(tree_data,
+                          options = list(pageLength = 5),
+                          rownames = FALSE)
+        })
+    
+    
     output$clinic_tree <- renderPlot({
         Pareto_raw <-  OP_2018 %>% 
             filter(Clinical_line == input$clinic) %>%
@@ -249,7 +327,16 @@ server <- function(input, output) {
         names(Pareto_data) <- Pareto_raw$Funding_type
         pareto.chart(Pareto_data, main = "What is 75% of current clinic workload", ylab = "Number per year", cumperc = seq(0,100, by = 20))
     })
-    
+  
+    output$clinic_tree_2 <- renderPlot({
+        tree_map_data = OP_2018 %>% 
+            filter(Clinical_line == input$clinic) %>% 
+            group_by(Funding_type) %>% 
+            summarise(Count = n()) %>%
+            arrange(Count)
+        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What appointment type is most commonly request?")
+    })
+      
     output$clinic_tbl <-  DT::renderDataTable(
         if(input$show_data_clinic){
             tree_data <-  OP_2018 %>%
