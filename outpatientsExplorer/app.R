@@ -31,6 +31,9 @@ No_clinics <- No_clinics %>%
 Mean_no_clinics_attended <- round(mean(No_clinics$Number), digits = 1)
 Median_no_clinics_attended <- median(No_clinics$Number)
 
+OP_2018 <- OP_2018 %>% 
+  mutate(Week_Number = week(Week))
+
 plot_age <- ggplot(OP_2018, aes(x = Age)) +
     geom_histogram(binwidth = 5, fill = "red") +
     labs(title = "What was the distribution of ages?") +
@@ -78,16 +81,20 @@ my_sidebar <- dashboardSidebar(
             tabName = "by_locality"
         ),
         menuItem(
-            "By referral source",
+            "Referral",
             tabName = "referral_source"
         ),
         menuItem(
-            "Supply by clinic",
+          "External demand",
+          tabName = "by_referral"
+        ),
+        menuItem(
+            "Clinic processes",
             tabName = "by_clinic"
         ),
         menuItem(
-            "Demand by clinic",
-            tabName = "by_referral"
+          "Amenable demand",
+          tabName = "internal_demand"
         )
     )
 )
@@ -227,7 +234,26 @@ my_body <- dashboardBody(
                             DT::dataTableOutput("tbl_2")
                         )
                         
-                    )))
+                    ))),
+        tabItem(tabName = "internal_demand",
+                fluidPage(
+                  sidebarLayout(
+                    sidebarPanel(
+                      wellPanel(
+                        selectInput(
+                          inputId = "clinic_name",
+                          label = "Clinic name",
+                          choices = levels(factor(OP_2018$Clinical_line)),
+                          multiple = FALSE,
+                          selected = "Urology"
+                        )
+                      )
+                    ),
+                   mainPanel(
+                     plotOutput("control_chart")
+                   ) 
+                  )
+                ))
     ))
 
 
@@ -274,6 +300,15 @@ server <- function(input, output) {
         treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is the most common appointment type for a locality?")
     })
     
+    output$control_chart <- renderPlot({
+      Count_data <- OP_2018 %>% 
+        filter(Clinical_line == input$clinic_name,
+               Appointment_type == "Follow up") %>% 
+        group_by(Week_Number) %>% 
+        summarise(Count = n())
+      qcc(Count_data$Count, type = "xbar.one", nsigmas = 2, title = "Control chart of internally amenable demand")
+    })
+    
     
     output$tbl <-  DT::renderDataTable(
         if(input$show_data_local){
@@ -302,7 +337,7 @@ server <- function(input, output) {
             group_by(Referral_type) %>% 
             summarise(Count = n()) %>%
             arrange(Count)
-        treemap(tree_map_data, index = "Referral_type", vSize = "Count", title = "What appointment type is most commonly request?")
+        treemap(tree_map_data, index = "Referral_type", vSize = "Count", title = "What appointment type is most commonly requested?")
     })
     
     
@@ -326,7 +361,7 @@ server <- function(input, output) {
             summarise(Count = n())
         Pareto_data <- Pareto_raw$Count
         names(Pareto_data) <- Pareto_raw$Funding_type
-        pareto.chart(Pareto_data, main = "What is 75% of current clinic workload", ylab = "Number per year", cumperc = seq(0,100, by = 20))
+        pareto.chart(Pareto_data, main = "Top 80% of current clinic workload", ylab = "Number per year", cumperc = seq(0,100, by = 20))
     })
   
     output$clinic_tree_2 <- renderPlot({
@@ -335,7 +370,7 @@ server <- function(input, output) {
             group_by(Funding_type) %>% 
             summarise(Count = n()) %>%
             arrange(Count)
-        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What appointment type is most commonly request?")
+        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is process is most commonly provided")
     })
       
     output$clinic_tbl <-  DT::renderDataTable(
