@@ -337,7 +337,7 @@ server <- function(input, output) {
             group_by(Referral_type) %>% 
             summarise(Count = n()) %>%
             arrange(Count)
-        treemap(tree_map_data, index = "Referral_type", vSize = "Count", title = "What appointment type is most commonly requested?")
+        treemap(tree_map_data, index = "Referral_type", vSize = "Count", title = "What is most commonly requested?")
     })
     
     
@@ -370,7 +370,7 @@ server <- function(input, output) {
             group_by(Funding_type) %>% 
             summarise(Count = n()) %>%
             arrange(Count)
-        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is process is most commonly provided")
+        treemap(tree_map_data, index = "Funding_type", vSize = "Count", title = "What is most commonly provided")
     })
       
     output$clinic_tbl <-  DT::renderDataTable(
